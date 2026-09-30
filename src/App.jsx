@@ -1,44 +1,47 @@
 import { useState } from "react";
 
 const TAREAS_FIJAS = [
-  { nombre: "🪑 Salón 1", iniciales: "" },
-  { nombre: "🚹 Baño hombres", iniciales: "" },
-  { nombre: "🪑 Salón 2", iniciales: "" },
-  { nombre: "🚺 Baño mujeres", iniciales: "" },
-  { nombre: "🛵 Área de domicilio", iniciales: "" },
+  { nombre: "🪑 Salón 1", hecho: false },
+  { nombre: "🚹 Baño hombres", hecho: false },
+  { nombre: "🪑 Salón 2", hecho: false },
+  { nombre: "🚺 Baño mujeres", hecho: false },
+  { nombre: "🛵 Área de domicilio", hecho: false },
 ];
 
 const TAREAS_DIA = {
   0: [ // Domingo
-    { nombre: "🧯 Extintores", iniciales: "" },
-    { nombre: "📺 TVs", iniciales: "" },
-    { nombre: "🧱 Paredes", iniciales: "" },
-    { nombre: "💡 Lámparas", iniciales: "" },
+    { nombre: "🧯 Extintores", hecho: false },
+    { nombre: "📺 TVs", hecho: false },
+    { nombre: "🧱 Paredes", hecho: false },
+    { nombre: "💡 Lámparas", hecho: false },
   ],
   1: [ // Lunes
-    { nombre: "🪟 Vidrios", iniciales: "" },
-    { nombre: "🗑️ Botes de basura", iniciales: "" },
+    { nombre: "🪟 Vidrios", hecho: false },
+    { nombre: "🗑️ Botes de basura", hecho: false },
+    { nombre: "🥫 Rellenar catsup, soya y demás", hecho: false },
   ],
   2: [ // Martes
-    { nombre: "💺 Bases y sillas", iniciales: "" },
-    { nombre: "❄️ Refrigerador de domicilio", iniciales: "" },
+    { nombre: "💺 Bases y sillas", hecho: false },
+    { nombre: "❄️ Refrigerador de domicilio", hecho: false },
   ],
   3: [ // Miércoles
-    { nombre: "🪞 Mueble salón 1", iniciales: "" },
-    { nombre: "📋 Menús", iniciales: "" },
-    { nombre: "💻 Mueble computadora salón 2", iniciales: "" },
+    { nombre: "🪞 Mueble salón 1", hecho: false },
+    { nombre: "📋 Menús", hecho: false },
+    { nombre: "💻 Mueble computadora salón 2", hecho: false },
   ],
   4: [ // Jueves
-    { nombre: "🧺 Tapetes y jergas", iniciales: "" },
-    { nombre: "🌿 Jardineras y plantas", iniciales: "" },
+    { nombre: "🗑️ Botes de basura", hecho: false },
+    { nombre: "🌿 Jardineras y plantas", hecho: false },
   ],
   5: [ // Viernes
-    { nombre: "🪟 Vidrios", iniciales: "" },
-    { nombre: "🗑️ Botes de basura", iniciales: "" },
+    { nombre: "🪟 Vidrios", hecho: false },
+    { nombre: "🧺 Tapetes y jergas", hecho: false },
+    { nombre: "🧴 Lavar soyeras y área de domicilio", hecho: false },
   ],
   6: [ // Sábado
-    { nombre: "💺 Bases y sillas", iniciales: "" },
-    { nombre: "🧺 Tapetes y jergas", iniciales: "" },
+    { nombre: "💺 Bases y sillas", hecho: false },
+    { nombre: "📋 Menús", hecho: false },
+    { nombre: "🥫 Rellenar catsup, soya y demás", hecho: false },
   ],
 };
 
@@ -57,7 +60,6 @@ export default function App() {
   const [diaNum, setDiaNum] = useState(null);
   const [encargado, setEncargado] = useState("");
   const [tareas, setTareas] = useState([]);
-  const [revisado, setRevisado] = useState(false);
 
   const diaData = DIAS.find(d => d.num === diaNum);
   const color = diaData?.color || "#1a1a1a";
@@ -65,23 +67,30 @@ export default function App() {
   const hoy = new Date().getDay();
 
   function seleccionarDia(num) {
-    const fijas = TAREAS_FIJAS.map(t => ({ ...t, iniciales: "" }));
-    const extras = (TAREAS_DIA[num] || []).map(t => ({ ...t, iniciales: "" }));
+    const fijas = TAREAS_FIJAS.map(t => ({ ...t, hecho: false }));
+    const extras = (TAREAS_DIA[num] || []).map(t => ({ ...t, hecho: false }));
     setTareas([...fijas, ...extras]);
     setDiaNum(num);
-    setRevisado(false);
     setStep("tareas");
   }
 
-  function setIniciales(i, val) {
-    setTareas(prev => prev.map((t, idx) => idx === i ? { ...t, iniciales: val } : t));
+  function toggleTarea(i) {
+    setTareas(prev => prev.map((t, idx) => idx === i ? { ...t, hecho: !t.hecho } : t));
   }
 
-  const todasMarcadas = tareas.length > 0 && tareas.every(t => t.iniciales.trim() !== "");
+  function marcarTodo() {
+    setTareas(prev => prev.map(t => ({ ...t, hecho: true })));
+  }
+
+  const todasMarcadas = tareas.length > 0 && tareas.every(t => t.hecho);
+  const completadas = tareas.filter(t => t.hecho).length;
+  const pct = tareas.length ? (completadas / tareas.length) * 100 : 0;
+
+  const todoMarcado = todasMarcadas;
 
   function enviar() {
     const fecha = new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
-    const lineas = tareas.map(t => `✅ ${t.nombre} — ${t.iniciales.toUpperCase()}`).join("\n");
+    const lineas = tareas.map(t => `✅ ${t.nombre}`).join("\n");
     const msg =
       `🧹 *LIMPIEZA NOCTURNA — ROLLI SUSHI*\n` +
       `📅 ${diaData.label} ${fecha}\n` +
@@ -94,9 +103,11 @@ export default function App() {
       setDiaNum(null);
       setEncargado("");
       setTareas([]);
-      setRevisado(false);
     }, 800);
   }
+
+  const fijas = tareas.filter((_, i) => i < TAREAS_FIJAS.length);
+  const extras = tareas.filter((_, i) => i >= TAREAS_FIJAS.length);
 
   const s = {
     app: { minHeight: "100vh", background: "#f5f5f0", fontFamily: "Arial, sans-serif", display: "flex", flexDirection: "column", alignItems: "center" },
@@ -131,11 +142,6 @@ export default function App() {
     progressBar: { height: "5px", background: "#eee", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" },
     progressFill: (c, pct) => ({ height: "100%", width: `${pct}%`, background: c, borderRadius: "3px", transition: "width 0.3s" }),
   };
-
-  const fijas = tareas.filter((_, i) => i < TAREAS_FIJAS.length);
-  const extras = tareas.filter((_, i) => i >= TAREAS_FIJAS.length);
-  const completadas = tareas.filter(t => t.iniciales.trim() !== "").length;
-  const pct = tareas.length ? (completadas / tareas.length) * 100 : 0;
 
   return (
     <div style={s.app}>
@@ -185,18 +191,45 @@ export default function App() {
               <div style={s.progressFill(color, pct)} />
             </div>
 
+            {/* BOTÓN ÚNICO: Marcar todo */}
+            <button
+              onClick={marcarTodo}
+              style={{
+                width: "100%",
+                background: todoMarcado ? color : "#fff",
+                color: todoMarcado ? "#fff" : color,
+                border: `2px solid ${color}`,
+                borderRadius: "10px",
+                padding: "11px 16px",
+                fontSize: "14px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                marginBottom: "12px",
+                transition: "all 0.2s",
+              }}
+            >
+              <span style={{ fontSize: "18px" }}>{todoMarcado ? "✅" : "☑️"}</span>
+              {todoMarcado ? "Todo marcado" : "Marcar todo"}
+            </button>
+
             <div style={s.card}>
               <div style={s.sectionLabel}>Tareas diarias</div>
               {fijas.map((t, i) => (
-                <div key={i} style={s.tareaRow}>
-                  <div style={s.tareaNombre}>{t.nombre}</div>
-                  <input
-                    style={{ ...s.inicialesInput, borderBottomColor: color }}
-                    maxLength={3}
-                    placeholder="—"
-                    value={t.iniciales}
-                    onChange={e => setIniciales(i, e.target.value)}
-                  />
+                <div key={i} style={s.tareaRow} onClick={() => toggleTarea(i)}>
+                  <div style={{ ...s.tareaNombre, color: t.hecho ? "#aaa" : "#111", textDecoration: t.hecho ? "line-through" : "none" }}>{t.nombre}</div>
+                  <div style={{
+                    width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
+                    border: `2px solid ${t.hecho ? color : "#ddd"}`,
+                    background: t.hecho ? color : "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "14px", cursor: "pointer", transition: "all 0.15s",
+                  }}>
+                    {t.hecho && <span style={{ color: "#fff" }}>✓</span>}
+                  </div>
                 </div>
               ))}
 
@@ -204,15 +237,17 @@ export default function App() {
                 <>
                   <div style={s.sectionLabel}>Tareas del {diaData.label}</div>
                   {extras.map((t, i) => (
-                    <div key={i} style={s.tareaRow}>
-                      <div style={s.tareaNombre}>{t.nombre}</div>
-                      <input
-                        style={{ ...s.inicialesInput, borderBottomColor: color }}
-                        maxLength={3}
-                        placeholder="—"
-                        value={t.iniciales}
-                        onChange={e => setIniciales(TAREAS_FIJAS.length + i, e.target.value)}
-                      />
+                    <div key={i} style={s.tareaRow} onClick={() => toggleTarea(TAREAS_FIJAS.length + i)}>
+                      <div style={{ ...s.tareaNombre, color: t.hecho ? "#aaa" : "#111", textDecoration: t.hecho ? "line-through" : "none" }}>{t.nombre}</div>
+                      <div style={{
+                        width: "28px", height: "28px", borderRadius: "50%", flexShrink: 0,
+                        border: `2px solid ${t.hecho ? color : "#ddd"}`,
+                        background: t.hecho ? color : "#fff",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "14px", cursor: "pointer", transition: "all 0.15s",
+                      }}>
+                        {t.hecho && <span style={{ color: "#fff" }}>✓</span>}
+                      </div>
                     </div>
                   ))}
                 </>
@@ -233,7 +268,7 @@ export default function App() {
             </button>
             {(!todasMarcadas || !encargado.trim()) && (
               <div style={{ textAlign: "center", fontSize: "12px", color: "#aaa", marginTop: "8px" }}>
-                {!encargado.trim() ? "Escribe el nombre del encargado" : "Pon las iniciales de todos para enviar"}
+                {!encargado.trim() ? "Escribe el nombre del encargado" : "Marca todo para poder enviar"}
               </div>
             )}
             <button style={s.btnSec} onClick={() => setStep("dia")}>Cancelar</button>
