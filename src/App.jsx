@@ -34,11 +34,11 @@ const TAREAS_DIA = {
     { nombre: "🌿 Jardineras y plantas", hecho: false },
   ],
   5: [ // Viernes
-    { nombre: "🪟 Vidrios", hecho: false },
     { nombre: "🧺 Tapetes y jergas", hecho: false },
     { nombre: "🧴 Lavar soyeras y área de domicilio", hecho: false },
   ],
   6: [ // Sábado
+    { nombre: "🪟 Vidrios", hecho: false },
     { nombre: "💺 Bases y sillas", hecho: false },
     { nombre: "📋 Menús", hecho: false },
     { nombre: "🥫 Rellenar catsup, soya y demás", hecho: false },
@@ -60,6 +60,7 @@ export default function App() {
   const [diaNum, setDiaNum] = useState(null);
   const [encargado, setEncargado] = useState("");
   const [tareas, setTareas] = useState([]);
+  const [copiado, setCopiado] = useState(false);
 
   const diaData = DIAS.find(d => d.num === diaNum);
   const color = diaData?.color || "#1a1a1a";
@@ -88,22 +89,35 @@ export default function App() {
 
   const todoMarcado = todasMarcadas;
 
-  function enviar() {
+  function getMensaje() {
     const fecha = new Date().toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
     const lineas = tareas.map(t => `✅ ${t.nombre}`).join("\n");
-    const msg =
-      `🧹 *LIMPIEZA NOCTURNA — ROLLI SUSHI*\n` +
-      `📅 ${diaData.label} ${fecha}\n` +
-      `👤 Encargado: ${encargado || "—"}\n\n` +
-      lineas;
-    navigator.clipboard.writeText(msg).catch(() => {});
-    window.open("https://chat.whatsapp.com/Hoy9Hr9HbiyHqrnb7gUwM9", "_blank");
-    setTimeout(() => {
-      setStep("dia");
-      setDiaNum(null);
-      setEncargado("");
-      setTareas([]);
-    }, 800);
+    return `🧹 *LIMPIEZA NOCTURNA — ROLLI SUSHI*\n📅 ${diaData.label} ${fecha}\n👤 Encargado: ${encargado || "—"}\n\n${lineas}`;
+  }
+
+  function irAEnviar() {
+    setCopiado(false);
+    setStep("enviar");
+  }
+
+  function copiar() {
+    const msg = getMensaje();
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    }).catch(() => {
+      // fallback: seleccionar el textarea
+      const ta = document.getElementById("msg-preview");
+      if (ta) { ta.select(); document.execCommand("copy"); setCopiado(true); setTimeout(() => setCopiado(false), 2500); }
+    });
+  }
+
+  function reiniciar() {
+    setStep("dia");
+    setDiaNum(null);
+    setEncargado("");
+    setTareas([]);
+    setCopiado(false);
   }
 
   const fijas = tareas.filter((_, i) => i < TAREAS_FIJAS.length);
@@ -263,8 +277,8 @@ export default function App() {
               </div>
             </div>
 
-            <button style={s.btn(color, !todasMarcadas || !encargado.trim())} disabled={!todasMarcadas || !encargado.trim()} onClick={enviar}>
-              📲 Enviar al grupo
+            <button style={s.btn(color, !todasMarcadas || !encargado.trim())} disabled={!todasMarcadas || !encargado.trim()} onClick={irAEnviar}>
+              📲 Preparar mensaje
             </button>
             {(!todasMarcadas || !encargado.trim()) && (
               <div style={{ textAlign: "center", fontSize: "12px", color: "#aaa", marginTop: "8px" }}>
@@ -272,6 +286,61 @@ export default function App() {
               </div>
             )}
             <button style={s.btnSec} onClick={() => setStep("dia")}>Cancelar</button>
+          </>
+        )}
+
+        {/* PASO 3: Enviar */}
+        {step === "enviar" && diaData && (
+          <>
+            <button style={s.backBtn} onClick={() => setStep("tareas")}>← Regresar</button>
+
+            <div style={{ textAlign: "center", marginBottom: "16px" }}>
+              <div style={{ fontSize: "36px" }}>✅</div>
+              <div style={{ fontSize: "18px", fontWeight: "bold", color: "#111", marginTop: "4px" }}>¡Limpieza lista!</div>
+              <div style={{ fontSize: "13px", color: "#888", marginTop: "4px" }}>Copia el mensaje y pégalo en el grupo de WhatsApp</div>
+            </div>
+
+            <div style={s.card}>
+              <div style={{ fontSize: "10px", fontWeight: "bold", color: "#aaa", letterSpacing: "1.5px", marginBottom: "8px" }}>MENSAJE PARA EL GRUPO</div>
+              <textarea
+                id="msg-preview"
+                readOnly
+                value={getMensaje()}
+                style={{
+                  width: "100%", border: "none", background: "#f8f8f8", borderRadius: "8px",
+                  padding: "12px", fontSize: "13px", lineHeight: "1.7", color: "#333",
+                  resize: "none", outline: "none", boxSizing: "border-box",
+                  minHeight: "180px", fontFamily: "Arial, sans-serif",
+                }}
+              />
+            </div>
+
+            <button
+              onClick={copiar}
+              style={{
+                ...s.btn(copiado ? "#2e7d32" : color, false),
+                marginTop: "0",
+              }}
+            >
+              {copiado ? "✅ ¡Copiado!" : "📋 Copiar mensaje"}
+            </button>
+
+            <a
+              href="https://chat.whatsapp.com/Hoy9Hr9HbiyHqrnb7gUwM9"
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "block", width: "100%", textAlign: "center",
+                background: "#25D366", color: "#fff", border: "none",
+                borderRadius: "12px", padding: "16px", fontSize: "16px",
+                fontWeight: "bold", cursor: "pointer", letterSpacing: "1px",
+                marginTop: "8px", textDecoration: "none", boxSizing: "border-box",
+              }}
+            >
+              💬 Abrir grupo de WhatsApp
+            </a>
+
+            <button style={s.btnSec} onClick={reiniciar}>🔄 Nueva limpieza</button>
           </>
         )}
 
